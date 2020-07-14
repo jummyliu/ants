@@ -23,6 +23,8 @@
 package ants
 
 import (
+	"log"
+	"os"
 	"runtime"
 	"sync"
 	"sync/atomic"
@@ -36,12 +38,12 @@ const (
 	_   = 1 << (10 * iota)
 	KiB // 1024
 	MiB // 1048576
-	//GiB // 1073741824
-	//TiB // 1099511627776             (超过了int32的范围)
-	//PiB // 1125899906842624
-	//EiB // 1152921504606846976
-	//ZiB // 1180591620717411303424    (超过了int64的范围)
-	//YiB // 1208925819614629174706176
+	// GiB // 1073741824
+	// TiB // 1099511627776             (超过了int32的范围)
+	// PiB // 1125899906842624
+	// EiB // 1152921504606846976
+	// ZiB // 1180591620717411303424    (超过了int64的范围)
+	// YiB // 1208925819614629174706176
 )
 
 const (
@@ -190,6 +192,7 @@ func TestAntsPoolWithFuncGetWorkerFromCachePreMalloc(t *testing.T) {
 //-------------------------------------------------------------------------------------------
 // Contrast between goroutines without a pool and goroutines with ants pool.
 //-------------------------------------------------------------------------------------------
+
 func TestNoPool(t *testing.T) {
 	var wg sync.WaitGroup
 	for i := 0; i < n; i++ {
@@ -376,7 +379,8 @@ func TestNonblockingSubmit(t *testing.T) {
 	}
 	// p is full now.
 	assert.NoError(t, p.Submit(f), "nonblocking submit when pool is not full shouldn't return error")
-	assert.EqualError(t, p.Submit(demoFunc), ErrPoolOverload.Error(), "nonblocking submit when pool is full should get an ErrPoolOverload")
+	assert.EqualError(t, p.Submit(demoFunc), ErrPoolOverload.Error(),
+		"nonblocking submit when pool is full should get an ErrPoolOverload")
 	// interrupt f to get an available worker
 	close(ch)
 	<-ch1
@@ -409,7 +413,8 @@ func TestMaxBlockingSubmit(t *testing.T) {
 	}()
 	time.Sleep(1 * time.Second)
 	// already reached max blocking limit
-	assert.EqualError(t, p.Submit(demoFunc), ErrPoolOverload.Error(), "blocking submit when pool reach max blocking submit should return ErrPoolOverload")
+	assert.EqualError(t, p.Submit(demoFunc), ErrPoolOverload.Error(),
+		"blocking submit when pool reach max blocking submit should return ErrPoolOverload")
 	// interrupt f to make blocking submit successful.
 	close(ch)
 	wg.Wait()
@@ -435,7 +440,8 @@ func TestNonblockingSubmitWithFunc(t *testing.T) {
 	ch := make(chan struct{})
 	// p is full now.
 	assert.NoError(t, p.Invoke(ch), "nonblocking submit when pool is not full shouldn't return error")
-	assert.EqualError(t, p.Invoke(nil), ErrPoolOverload.Error(), "nonblocking submit when pool is full should get an ErrPoolOverload")
+	assert.EqualError(t, p.Invoke(nil), ErrPoolOverload.Error(),
+		"nonblocking submit when pool is full should get an ErrPoolOverload")
 	// interrupt f to get an available worker
 	close(ch)
 	<-ch1
@@ -465,7 +471,8 @@ func TestMaxBlockingSubmitWithFunc(t *testing.T) {
 	}()
 	time.Sleep(1 * time.Second)
 	// already reached max blocking limit
-	assert.EqualErrorf(t, p.Invoke(Param), ErrPoolOverload.Error(), "blocking submit when pool reach max blocking submit should return ErrPoolOverload: %v", err)
+	assert.EqualErrorf(t, p.Invoke(Param), ErrPoolOverload.Error(),
+		"blocking submit when pool reach max blocking submit should return ErrPoolOverload: %v", err)
 	// interrupt one func to make blocking submit successful.
 	close(ch)
 	wg.Wait()
@@ -529,6 +536,29 @@ func TestRebootNewPool(t *testing.T) {
 	wg.Wait()
 }
 
+func TestInfinitePool(t *testing.T) {
+	c := make(chan struct{})
+	p, _ := NewPool(-1)
+	_ = p.Submit(func() {
+		_ = p.Submit(func() {
+			<-c
+		})
+	})
+	c <- struct{}{}
+	if n := p.Running(); n != 2 {
+		t.Errorf("expect 2 workers running, but got %d", n)
+	}
+	p.Tune(10)
+	if capacity := p.Cap(); capacity != -1 {
+		t.Fatalf("expect capacity: -1 but got %d", capacity)
+	}
+	var err error
+	p, err = NewPool(-1, WithPreAlloc(true))
+	if err != ErrInvalidPreAllocSize {
+		t.Errorf("expect ErrInvalidPreAllocSize but got %v", err)
+	}
+}
+
 func TestRestCodeCoverage(t *testing.T) {
 	_, err := NewPool(-1, WithExpiryDuration(-1))
 	t.Log(err)
@@ -546,7 +576,7 @@ func TestRestCodeCoverage(t *testing.T) {
 	poolOpts, _ := NewPool(1, WithOptions(options))
 	t.Logf("Pool with options, capacity: %d", poolOpts.Cap())
 
-	p0, _ := NewPool(TestSize)
+	p0, _ := NewPool(TestSize, WithLogger(log.New(os.Stderr, "", log.LstdFlags)))
 	defer func() {
 		_ = p0.Submit(demoFunc)
 	}()

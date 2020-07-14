@@ -30,7 +30,8 @@ import (
 	"github.com/panjf2000/ants/v2/internal"
 )
 
-// PoolWithFunc accepts the tasks from client, it limits the total of goroutines to a given number by recycling goroutines.
+// PoolWithFunc accepts the tasks from client,
+// it limits the total of goroutines to a given number by recycling goroutines.
 type PoolWithFunc struct {
 	// capacity of the pool.
 	capacity int32
@@ -117,15 +118,16 @@ func NewPoolWithFunc(size int, pf func(interface{}), options ...Option) (*PoolWi
 		return nil, ErrLackPoolFunc
 	}
 
-	opts := new(Options)
-	for _, option := range options {
-		option(opts)
-	}
+	opts := loadOptions(options...)
 
 	if expiry := opts.ExpiryDuration; expiry < 0 {
 		return nil, ErrInvalidPoolExpiry
 	} else if expiry == 0 {
 		opts.ExpiryDuration = DefaultCleanIntervalTime
+	}
+
+	if opts.Logger == nil {
+		opts.Logger = defaultLogger
 	}
 
 	p := &PoolWithFunc{
@@ -183,7 +185,7 @@ func (p *PoolWithFunc) Cap() int {
 
 // Tune changes the capacity of this pool.
 func (p *PoolWithFunc) Tune(size int) {
-	if size < 0 || p.Cap() == size || p.options.PreAlloc {
+	if size <= 0 || size == p.Cap() || p.options.PreAlloc {
 		return
 	}
 	atomic.StoreInt32(&p.capacity, int32(size))
@@ -221,8 +223,7 @@ func (p *PoolWithFunc) decRunning() {
 }
 
 // retrieveWorker returns a available worker to run the tasks.
-func (p *PoolWithFunc) retrieveWorker() *goWorkerWithFunc {
-	var w *goWorkerWithFunc
+func (p *PoolWithFunc) retrieveWorker() (w *goWorkerWithFunc) {
 	spawnWorker := func() {
 		w = p.workerCache.Get().(*goWorkerWithFunc)
 		w.run()
@@ -242,12 +243,12 @@ func (p *PoolWithFunc) retrieveWorker() *goWorkerWithFunc {
 	} else {
 		if p.options.Nonblocking {
 			p.lock.Unlock()
-			return nil
+			return
 		}
 	Reentry:
 		if p.options.MaxBlockingTasks != 0 && p.blockingNum >= p.options.MaxBlockingTasks {
 			p.lock.Unlock()
-			return nil
+			return
 		}
 		p.blockingNum++
 		p.cond.Wait()
@@ -255,7 +256,7 @@ func (p *PoolWithFunc) retrieveWorker() *goWorkerWithFunc {
 		if p.Running() == 0 {
 			p.lock.Unlock()
 			spawnWorker()
-			return w
+			return
 		}
 		l := len(p.workers) - 1
 		if l < 0 {
@@ -266,7 +267,7 @@ func (p *PoolWithFunc) retrieveWorker() *goWorkerWithFunc {
 		p.workers = p.workers[:l]
 		p.lock.Unlock()
 	}
-	return w
+	return
 }
 
 // revertWorker puts a worker back into free pool, recycling the goroutines.

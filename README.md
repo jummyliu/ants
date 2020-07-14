@@ -2,15 +2,14 @@
 <img src="https://raw.githubusercontent.com/panjf2000/logos/master/ants/logo.png"/>
 <b>A goroutine pool in Go</b>
 <br/><br/>
-<a title="Build Status" target="_blank" href="https://travis-ci.com/panjf2000/ants"><img src="https://img.shields.io/travis/com/panjf2000/ants?style=flat-square&logo=appveyor"></a>
-<a title="Codecov" target="_blank" href="https://codecov.io/gh/panjf2000/ants"><img src="https://img.shields.io/codecov/c/github/panjf2000/ants?style=flat-square&logo=appveyor"></a>
-<a title="Stars" target="_blank" href="https://github.com/panjf2000/ants/stargazers"><img src="https://img.shields.io/github/stars/panjf2000/ants?color=eacd76&style=flat-square&logo=appveyor"></a>
-<a title="Release" target="_blank" href="https://github.com/panjf2000/ants/releases"><img src="https://img.shields.io/github/release/panjf2000/ants.svg?color=161823&style=flat-square&logo=appveyor"></a>
-<a title="Ants on Sourcegraph" target="_blank" href="https://sourcegraph.com/github.com/panjf2000/ants?badge"><img src="https://sourcegraph.com/github.com/panjf2000/ants/-/badge.svg?style=flat-square"></a>
+<a title="Build Status" target="_blank" href="https://travis-ci.com/panjf2000/ants"><img src="https://img.shields.io/travis/com/panjf2000/ants?style=flat-square&logo=travis-ci&logoColor=white"></a>
+<a title="Codecov" target="_blank" href="https://codecov.io/gh/panjf2000/ants"><img src="https://img.shields.io/codecov/c/github/panjf2000/ants?style=flat-square&logo=codecov"></a>
+<a title="Release" target="_blank" href="https://github.com/panjf2000/ants/releases"><img src="https://img.shields.io/github/v/release/panjf2000/ants.svg?color=161823&style=flat-square&logo=smartthings"></a>
+<a title="Tag" target="_blank" href="https://github.com/panjf2000/ants/tags"><img src="https://img.shields.io/github/v/tag/panjf2000/ants?color=%23ff8936&logo=fitbit&style=flat-square"></a>
 <br/>
 <a title="Go Report Card" target="_blank" href="https://goreportcard.com/report/github.com/panjf2000/ants"><img src="https://goreportcard.com/badge/github.com/panjf2000/ants?style=flat-square"></a>
-<a title="GolangCI" target="_blank" href="https://golangci.com/r/github.com/panjf2000/ants"><img src="https://golangci.com/badges/github.com/panjf2000/ants.svg"></a>
-<a title="Doc for ants" target="_blank" href="https://gowalker.org/github.com/panjf2000/ants?lang=en-US"><img src="https://img.shields.io/badge/api-reference-8d4bbb.svg?style=flat-square&logo=appveyor"></a>
+<a title="Doc for ants" target="_blank" href="https://pkg.go.dev/github.com/panjf2000/ants/v2?tab=doc"><img src="https://img.shields.io/badge/go.dev-doc-007d9c?style=flat-square&logo=read-the-docs"></a>
+<a title="Ants on Sourcegraph" target="_blank" href="https://sourcegraph.com/github.com/panjf2000/ants?badge"><img src="https://sourcegraph.com/github.com/panjf2000/ants/-/badge.svg?style=flat-square"></a>
 <a title="Mentioned in Awesome Go" target="_blank" href="https://github.com/avelino/awesome-go#goroutines"><img src="https://awesome.re/mentioned-badge-flat.svg"></a>
 </p>
 
@@ -38,11 +37,23 @@ Library `ants` implements a goroutine pool with fixed capacity, managing and rec
 - 1.12.x
 - 1.13.x
 
-## 💡 `ants` works as the flowing flowchart
+## 💡 How `ants` works
+
+### Flow Diagram
 
 <p align="center">
 <img width="1011" alt="ants-flowchart-en" src="https://user-images.githubusercontent.com/7496278/66396509-7b42e700-ea0c-11e9-8612-b71a4b734683.png">
 </p>
+
+### Activity Diagrams
+
+![](https://raw.githubusercontent.com/panjf2000/illustrations/master/go/ants-pool-1.png)
+
+![](https://raw.githubusercontent.com/panjf2000/illustrations/master/go/ants-pool-2.png)
+
+![](https://raw.githubusercontent.com/panjf2000/illustrations/master/go/ants-pool-3.png)
+
+![](https://raw.githubusercontent.com/panjf2000/illustrations/master/go/ants-pool-4.png)
 
 ## 🧰 How to install
 
@@ -140,7 +151,7 @@ type Request struct {
 }
 
 func main() {
-  pool, _ := ants.NewPoolWithFunc(100000, func(payload interface{}) {
+	pool, _ := ants.NewPoolWithFunc(100000, func(payload interface{}) {
 		request, ok := payload.(*Request)
 		if !ok {
 			return
@@ -153,7 +164,7 @@ func main() {
 		}(request.Param)
 
 		request.Result <- reverseParam
-  })
+	})
 	defer pool.Release()
 
 	http.HandleFunc("/reverse", func(w http.ResponseWriter, r *http.Request) {
@@ -356,13 +367,18 @@ Source code in `ants` is available under the MIT [License](/LICENSE).
 ## 📚 Relevant Articles
 
 -  [Goroutine 并发调度模型深度解析之手撸一个高性能 goroutine 池](https://taohuawu.club/high-performance-implementation-of-goroutine-pool)
+-  [Visually Understanding Worker Pool](https://medium.com/coinmonks/visually-understanding-worker-pool-48a83b7fc1f5)
+-  [The Case For A Go Worker Pool](https://brandur.org/go-worker-pool)
+-  [Go Concurrency - GoRoutines, Worker Pools and Throttling Made Simple](https://twinnation.org/articles/39/go-concurrency-goroutines-worker-pools-and-throttling-made-simple)
 
-## 👨‍👨‍👧‍👦 Users of ants (please feel free to add your projects here ~~)
+## 🖥 User cases
+
+Please feel free to add your projects here~~
 
 <a href="https://github.com/panjf2000/gnet" target="_blank"><img src="https://raw.githubusercontent.com/panjf2000/logos/master/gnet/logo.png" width="150" align="middle"/></a>&nbsp;&nbsp;
 <a href="https://www.tencent.com"><img src="https://www.tencent.com/img/index/tencent_logo.png" width="250" align="middle"/></a>&nbsp;&nbsp;
 
-## JetBrains OS licenses
+## 🔋 JetBrains OS licenses
 
 `ants` had been being developed with GoLand under the **free JetBrains Open Source license(s)** granted by JetBrains s.r.o., hence I would like to express my thanks here.
 
